@@ -12,6 +12,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #include "KeyStorage.h"
@@ -67,6 +72,8 @@ static const char* kFn_keymaster_key_blob_upgraded = "keymaster_key_blob_upgrade
 static const char* kFn_secdiscardable = "secdiscardable";
 static const char* kFn_stretching = "stretching";
 static const char* kFn_version = "version";
+
+static const int32_t KM_TAG_FBE_ICE = static_cast<int32_t>(7 << 28) | 16201;
 
 namespace {
 
@@ -142,6 +149,12 @@ bool generateWrappedStorageKey(KeyBuffer* key) {
     std::string key_temp;
     auto paramBuilder = km::AuthorizationSetBuilder().AesEncryptionKey(AES_KEY_BYTES * 8);
     paramBuilder.Authorization(km::TAG_STORAGE_KEY);
+
+    km::KeyParameter param1;
+    param1.tag = (km::Tag) (KM_TAG_FBE_ICE);
+    param1.value = km::KeyParameterValue::make<km::KeyParameterValue::boolValue>(true);
+    paramBuilder.push_back(param1);
+
     if (!keystore.generateKey(paramBuilder, &key_temp)) return false;
     *key = KeyBuffer(key_temp.size());
     memcpy(reinterpret_cast<void*>(key->data()), key_temp.c_str(), key->size());
